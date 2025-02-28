@@ -1,7 +1,8 @@
 import os
 import platform
 import subprocess
-import re
+import sys
+import json
 
 def run_command(cmd):
     try:
@@ -243,13 +244,51 @@ def get_detailed_os_info():
     else:
         return system + " " + platform.release()
 
-def get_env_info():
-    print("どの情報を取得しますか？/Which information do you want to retrieve?（Please y/n）")
-    
-    hw = input("ハードウェア情報いる？/Do you need hardware information? (y/n): ").lower() == 'y'
-    os_info = input("OS情報いる？/Do you need the OS info? (y/n): ").lower() == 'y'
-    sw = input("ソフトウェアのバージョンいる？/Do you need the software version? (y/n): ").lower() == 'y'
-    
+def load_software_from_config():
+    """config.jsonからソフトウェアリストを読み込む"""
+    config_file = "config.json"
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            return config.get("software", {})
+        except Exception as e:
+            print(f"設定ファイル読み込みエラー: {e}")
+            return {}
+    return {}
+
+def prompt_yes_no(question, default="y"):
+    """デフォルト値付きのyes/noプロンプト"""
+    valid = {"y": True, "n": False, "": True if default == "y" else False}
+    prompt = f"{question} [y/n] (default '{default}'): "
+    while True:
+        choice = input(prompt).lower().strip()
+        if choice in valid:
+            return valid[choice]
+        print("Please respond with 'y' or 'n' (or press Enter for default).")
+
+def get_env_info(args=None):
+    """環境情報を取得する（引数または対話形式）"""
+    # コマンドライン引数の処理
+    if args is not None:
+        hw = "--hardware" in args
+        os_info = "--os" in args
+        sw = "--software" in args
+        software_list = []
+        for arg in args:
+            if arg.startswith("--software="):
+                software_list = arg.split("=")[1].split(",")
+    else:
+        # 対話形式での質問（デフォルトy）
+        print("\n=== 情報取得の選択 / Select Information to Retrieve ===")
+        print("以下の質問に'y'（はい）または'n'（いいえ）で答えてください。Enterキーでデフォルト（y）が選択されます。")
+        print("Answer the following with 'y' (yes) or 'n' (no). Press Enter for default (y).")
+        
+        hw = prompt_yes_no("ハードウェア情報いる？/Do you need hardware information?")
+        os_info = prompt_yes_no("OS情報いる？/Do you need the OS info?")
+        sw = prompt_yes_no("ソフトウェアのバージョンいる？/Do you need the software version?")
+        software_list = None  # 対話形式では後で設定
+
     result = {}
     
     if hw:
@@ -274,23 +313,58 @@ def get_env_info():
         result["OS"] = get_detailed_os_info()
     
     if sw:
-        print("どのソフトウェアのバージョンをチェックする？/Which software version to check?")
-        if input("- Python? (y/n): ").lower() == 'y':
-            result["Python"] = run_command("python --version") or run_command("python3 --version")
-        if input("- Docker? (y/n): ").lower() == 'y':
-            result["Docker"] = run_command("docker --version")
-        if input("- Git? (y/n): ").lower() == 'y':
-            result["Git"] = run_command("git --version")
-        if input("- VSCode? (y/n): ").lower() == 'y':
-            result["VSCode"] = run_command("code -v")
-        # 自分で追加したいソフトをここに
-        if input("- Node.js? (y/n): ").lower() == 'y':
-            result["Node.js"] = run_command("node -v")
+        # config.jsonからソフトウェアリストを取得
+        config_software = load_software_from_config()
+        
+        if args and software_list:  # コマンドライン引数から指定された場合
+            software_to_check = {name: cmd for name, cmd in config_software.items() if name in software_list}
+            if not software_to_check:  # 指定されたものがconfigにない場合
+                software_to_check = {
+                    "Python": "python --version || python3 --version",
+                    "Docker": "docker --version",
+                    "Git": "git --version",
+                    "VSCode": "code -v",
+                    "Node.js": "node -v"
+                }
+                software_to_check = {k: v for k, v in software_to_check.items() if k.lower() in [s.lower() for s in software_list]}
+        else:
+            # 対話形式の場合
+            print("\n=== ソフトウェアバージョンの選択 / Select Software Versions ===")
+            print("チェックしたいソフトウェアを選んでください。Enterでデフォルト（y）が選択されます。")
+            print("Select the software versions to check. Press Enter for default (y).")
+            
+            software_to_check = {}
+            default_software = {
+                "Python": "python --version || python3 --version",
+                "Docker": "docker --version",
+                "Git": "git --version",
+                "VSCode": "code -v",
+                "Node.js": "node -v"
+            }
+            
+            # config.jsonのソフトウェアを優先的に確認
+            for name, cmd in config_software.items():
+                if prompt_yes_no(f"- {name}?"):
+                    software_to_check[name] = cmd
+            
+            # デフォルトのソフトウェア（configにないもの）を追加で確認
+            for name, cmd in default_software.items():
+                if name not in software_to_check and prompt_yes_no(f"- {name}?"):
+                    software_to_check[name] = cmd
+        
+        # ソフトウェアバージョンの取得
+        for name, cmd in software_to_check.items():
+            result[name] = run_command(cmd)
     
     return result
 
 if __name__ == "__main__":
-    env = get_env_info()
+    # コマンドライン引数のチェック
+    if len(sys.argv) > 1:
+        env = get_env_info(sys.argv[1:])
+    else:
+        env = get_env_info()
+    
     print("\n=== Result ===")
     for key, value in env.items():
         print(f"{key}: {value}")
