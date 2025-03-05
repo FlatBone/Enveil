@@ -358,7 +358,7 @@ def get_env_info(args=None):
     
     return result
 
-if __name__ == "__main__":
+def main():
     # コマンドライン引数のチェック
     if len(sys.argv) > 1:
         env = get_env_info(sys.argv[1:])
@@ -368,3 +368,7 @@ if __name__ == "__main__":
     print("\n=== Result ===")
     for key, value in env.items():
         print(f"{key}: {value}")
+
+
+if __name__ == "__main__":
+    main()
