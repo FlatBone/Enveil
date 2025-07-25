@@ -1,4 +1,5 @@
 import pytest
+import re
 from src.enveil.core.command_executor import CommandExecutor
 from src.enveil.utils.exceptions import SecurityError, CommandExecutionError
 
@@ -27,10 +28,20 @@ def test_execute_with_invalid_params():
     pass
 
 # 4. 安全でないコマンドがSecurityErrorを発生させること
-def test_execute_unsafe_command():
+@pytest.mark.parametrize("unsafe_command", [
+    "echo hello; rm -rf /",
+    "echo hello | base64",
+    "echo hello > /dev/null",
+    "echo `uname -a`",
+    "$(uname)",
+    "cat /etc/passwd && echo pwned",
+    "ls -la; whoami"
+])
+def test_execute_unsafe_commands(unsafe_command):
     unsafe_commands = {
-        "unsafe_echo": "echo hello; rm -rf /"
+        "unsafe_cmd": unsafe_command
     }
     executor = CommandExecutor(allowed_commands=unsafe_commands)
-    with pytest.raises(SecurityError, match="Command 'echo hello; rm -rf /' is not safe."):
-        executor.execute("unsafe_echo")
+    match_string = re.escape(f"Command '{unsafe_command}' is not safe.")
+    with pytest.raises(SecurityError, match=match_string):
+        executor.execute("unsafe_cmd")

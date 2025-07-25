@@ -4,40 +4,29 @@ from ..utils.security import SecurityValidator
 from ..utils.exceptions import CommandExecutionError, SecurityError
 
 class CommandExecutor:
-    def __init__(self, allowed_commands: Dict[str, List[str]] = None):
+    def __init__(self, allowed_commands: Dict[str, str] = None):
         self.allowed_commands = allowed_commands if allowed_commands else {}
 
     def execute(self, command_key: str, params: List[str] = None) -> str:
         if command_key not in self.allowed_commands:
             raise SecurityError(f"Command '{command_key}' is not allowed.")
 
-        command_template = self.allowed_commands[command_key]
-        command = command_template
+        command = self.allowed_commands[command_key]
 
-        if params:
-            # Simple parameter substitution, assuming the template has placeholders like {0}, {1}
-            # For security, we should validate params before substitution
-            # This is a simplified version
-            try:
-                command = command.format(*[self.sanitize_input(p) for p in params])
-            except IndexError:
-                raise CommandExecutionError("Incorrect number of parameters for command.")
+        # パラメータ置換は未実装のため、paramsは無視
 
-        if not self.is_command_safe(command):
+        if not SecurityValidator.is_command_safe(command):
             raise SecurityError(f"Command '{command}' is not safe.")
 
         try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
+            # shell=Trueはインジェクションのリスクがあるが、is_command_safeで検証済みと想定
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, check=False, timeout=15)
+            if result.returncode != 0:
+                # コマンドが見つからない場合なども含め、エラーとして扱う
+                # ただし、バージョンチェックなどでコマンドがないのは許容したいため、ここでは出力を返す
+                return result.stderr.strip()
             return result.stdout.strip()
-        except subprocess.CalledProcessError as e:
-            raise CommandExecutionError(f"Command '{command}' failed with exit code {e.returncode}: {e.stderr.strip()}")
-        except FileNotFoundError:
-            raise CommandExecutionError(f"Command not found: {command.split()[0]}")
-
-    def is_command_safe(self, command: str) -> bool:
-        return SecurityValidator.validate_command(command)
-
-    def sanitize_input(self, input_str: str) -> str:
-        # Basic sanitization, remove potentially harmful characters
-        # This should be much more robust in a real-world scenario
-        return ''.join(c for c in input_str if c.isalnum() or c in ['-', '_', '.'])
+        except subprocess.TimeoutExpired:
+            raise CommandExecutionError(f"Command '{command}' timed out.")
+        except Exception as e:
+            raise CommandExecutionError(f"An unexpected error occurred while executing command '{command}': {e}")

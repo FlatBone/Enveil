@@ -1,15 +1,17 @@
 import re
 
 class SecurityValidator:
+    # シェルメタ文字、リダイレクト、ディレクトリトラバーサル、危険なコマンド
     BLOCKED_PATTERNS = [
-        r'[;&|`$()]',  # シェルメタ文字
-        r'\.\./',      # ディレクトリトラバーサル
-        r'rm\s+',      # 危険なコマンド
-        r'del\s+',     # 危険なコマンド
+        r'[;&|`$()><]', 
+        r'\.\./',
+        r'\brm\s+',
+        r'\bdel\s+'
     ]
     
     @classmethod
-    def validate_command(cls, command: str) -> bool:
+    def is_command_safe(cls, command: str) -> bool:
+        """コマンドが安全なパターンに一致するかを検証します。"""
         for pattern in cls.BLOCKED_PATTERNS:
             if re.search(pattern, command):
                 return False
