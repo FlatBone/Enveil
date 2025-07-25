@@ -1,106 +1,120 @@
 # Enveil
-A cross-platform utility for gathering detailed system information including hardware specifications, OS details, and software versions.
 
-## Features
+[![PyPI version](https://badge.fury.io/py/enveil.svg)](https://badge.fury.io/py/enveil)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-- **Cross-Platform Support**: Works on Windows, macOS, and Linux
-- **Comprehensive Information Collection**:
-  - Hardware: CPU, RAM, and GPU details
-  - Operating System: Version, edition, and build information
-  - Software: Version information for user-specified applications
-- **Flexible Usage**:
-  - Interactive mode with prompts
-  - Command-line arguments for scripted operations
-- **Customizable**: Configure additional software to check via config.json
+**Enveil** is a secure, cross-platform Python library and CLI tool for gathering detailed system environment information, including hardware, OS, and software versions.
 
-## Requirements
+It is designed with security as a priority, preventing command injection by validating commands against a configurable allowlist.
 
-- Python 3.6 or higher
-- Operating system-specific dependencies are handled automatically
+## Key Features
+
+- **Secure by Default**: Protects against command injection vulnerabilities.
+- **Cross-Platform**: Works on Windows, macOS, and Linux.
+- **Comprehensive Data**: Gathers details on hardware (CPU, RAM, GPU), OS (version, build, architecture), and software.
+- **Flexible Output**: Provides output in human-readable format or as structured JSON, ideal for automation.
+- **Extensible**: Easily define custom software version checks through a simple configuration file.
+- **Dual Use**: Can be used as a standalone CLI tool or as a library in your Python projects.
 
 ## Installation
 
-1. Clone this repository or download the script:
-   ```
-   git clone https://github.com/yourusername/environment-info-tool.git
-   ```
-   
-2. Navigate to the directory:
-   ```
-   cd environment-info-tool
-   ```
+Install Enveil from PyPI:
 
-3. No additional installation steps are required - the script uses standard libraries.
-
-## Usage
-
-### Interactive Mode
-
-Run the script without arguments to use interactive mode:
-
-```
-python env_info.py
+```bash
+pip install enveil
 ```
 
-You'll be prompted to select what information you want to retrieve:
-- Hardware information
-- OS information
-- Software versions
+## Usage as a CLI Tool
 
-### Command-line Arguments
+### Basic Usage
 
-For automated use, you can specify what information to collect using arguments:
+Run `enveil` to get a complete report of the system environment:
 
-```
-python env_info.py --hardware --os --software
+```bash
+enveil
 ```
 
-To check specific software versions:
+### Getting Specific Information
 
+You can request specific categories of information using flags:
+
+```bash
+# Get only OS information
+enveil --os
+
+# Get hardware and software information
+enveil --hardware --software
 ```
-python env_info.py --software=Python,Git,Docker
+
+### JSON Output
+
+For scripting and automation, you can get the output in JSON format:
+
+```bash
+enveil --os --hardware --format json
 ```
 
-### Configuration
+## Usage as a Library
 
-Create a `config.json` file in the same directory as the script to define custom software checks:
+Enveil can be easily integrated into your Python applications.
+
+### Basic Example
+
+```python
+from enveil import EnveilAPI
+
+# Initialize the API
+api = EnveilAPI()
+
+# Get all environment information
+all_info = api.get_all_info()
+
+# Print the results
+import json
+print(json.dumps(all_info, indent=2))
+```
+
+### Fetching Specific Data
+
+You can also fetch specific categories of data.
+
+```python
+from enveil import EnveilAPI
+
+api = EnveilAPI()
+
+# Get just the hardware details
+hardware_info = api.get_hardware_info()
+print(hardware_info)
+# {'cpu': 'Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz', 'ram': '32.0 GB', 'gpu': 'NVIDIA GeForce RTX 3070'}
+
+# Get just the OS details
+os_info = api.get_os_info()
+print(os_info)
+# {'name': 'Windows', 'version': '10', 'build': '22631', 'architecture': '64-bit'}
+```
+
+## Configuration
+
+To check for custom software, create a `config.json` file in your working directory or in a standard config location (`~/.config/enveil/config.json` or `C:\Users\YourUser\AppData\Local\enveil\config.json`).
+
+**Example `config.json`:**
 
 ```json
 {
   "software": {
-    "Python": "python --version || python3 --version",
-    "Node.js": "node -v",
-    "npm": "npm -v",
-    "MyCustomTool": "mycustomtool --version"
+    "Python": {
+      "command": "python --version || python3 --version"
+    },
+    "Node.js": {
+      "command": "node -v"
+    }
   }
 }
 ```
 
-## Example Output
-
-```
-=== Result ===
-CPU: Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz
-RAM: 32.0GB
-GPU: NVIDIA GeForce RTX 3070 (8.0GB)
-OS: Windows 11 Pro 21H2
-Python: Python 3.9.7
-Docker: Docker version 20.10.17, build 100c701
-Git: git version 2.37.1.windows.1
-```
-
-## Troubleshooting
-
-If you encounter any issues:
-
-- Ensure you have proper permissions to execute system commands
-- On Linux/macOS, some hardware information may require root/sudo access
-- For GPU information on Linux, ensure appropriate drivers are installed
+Enveil will automatically pick up this configuration and include the specified software in its report.
 
 ## License
 
-[MIT License](LICENSE)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

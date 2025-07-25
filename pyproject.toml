@@ -5,19 +5,37 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "enveil"
 version = "0.1.0"
-description = "A tool to retrieve environment information"
-authors = [{name = "Your Name", email = "your.email@example.com"}]
+description = "A secure, cross-platform tool to gather system environment information (hardware, OS, software)."
+authors = [{name = "FlatBone", email = "contact@example.com"}]
+license = { file = "LICENSE" }
 readme = "README.md"
-requires-python = ">=3.6"
-dependencies = []  # 必要な依存関係があればここに追加
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+keywords = ["environment", "system", "information", "hardware", "os", "software", "cli"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/FlatBone/Enveil"
+Issues = "https://github.com/FlatBone/Enveil/issues"
 
 [project.scripts]
-enveil = "enveil.main:main"  # コマンドラインから実行可能にする
+enveil = "enveil.main:main"
 
-[dependency-groups]
-dev = [
-    "pytest>=7.0.1",
-]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 markers = [
