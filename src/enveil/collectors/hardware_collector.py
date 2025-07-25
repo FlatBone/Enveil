@@ -81,12 +81,26 @@ class HardwareCollector(BaseCollector):
                     continue
                 parts = line.split(',')
                 name = parts[name_index].strip()
+                gpu_name = parts[name_index].strip()
+                ram_str = parts[ram_index].strip()
+                
                 try:
-                    ram_bytes = int(parts[ram_index].strip())
-                    ram_gb = ram_bytes / (1024**3)
-                    gpus.append(f"{name} ({ram_gb:.1f}GB)")
+                    ram_bytes_signed = int(ram_str)
+                    
+                    if ram_bytes_signed < 0:
+                        # Handle potential 32-bit signed integer overflow for > 2GB VRAM
+                        ram_bytes = ram_bytes_signed + 2**32
+                    else:
+                        ram_bytes = ram_bytes_signed
+
+                    if ram_bytes > 0:
+                        ram_gb = ram_bytes / (1024**3)
+                        gpus.append(f"{gpu_name} ({ram_gb:.1f}GB)")
+                    else:
+                        gpus.append(gpu_name)
                 except (ValueError, IndexError):
-                    gpus.append(name) # RAMが取得できない場合
+                    # If RAM is not a valid number, just append the name
+                    gpus.append(gpu_name)
             
             return " / ".join(gpus) if gpus else "N/A"
         except Exception:

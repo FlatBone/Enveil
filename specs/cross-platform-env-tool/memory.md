@@ -27,4 +27,53 @@
 
 既知のバグがあるため修正が必要です。
 - 実行環境でのGPUは専用メモリが12.0GBのはずだが4.0GBになっている、"NVIDIA GeForce RTX 5070 (4.0GB)"
-- 実行環境では`$ python --version`の結果は`Python 3.12.1`だが、enveilの実行結果では"N/A"になっている
+これについての見解は以下です。マルチプラットフォームやNVIDIAだけに限らず動作を可能な限りさせたいとユーザーは考えています。
+~~~
+結論から言うと、原因はPythonのコードではなく、**wmicの `Win32_VideoController` クラスが持つ `AdapterRAM` プロパティの仕様上の制限である可能性が極めて高い**です。
+
+以下に考えられる原因を詳述します。
+
+### 原因の考察
+
+#### 1. wmicにおける4GBの壁
+wmicでGPU情報を取得する際に利用される `Win32_VideoController` クラスの `AdapterRAM` プロパティは、報告できるVRAMのサイズに上限があることが知られています。具体的には、この値が**最大で4GB（正確には 2^32 - 1 バイト）までしか正しく報告できない**ケースが多く報告されています。
+
+お使いのGPUのVRAMは12GBですが、wmicがこのプロパティを通じてシステムに問い合わせた結果、4GBとして切り捨てられた（あるいは上限値に丸められた）値が返ってきていると考えられます。そのため、wmicコマンド自体が `4294967296` (4GB) に近い値を返しており、Pythonコードはそれを忠実にGBに変換して表示している、という状況だと思われます。
+
+#### 2. 32ビット符号付き整数としての解釈（コードで対応済み）
+`AdapterRAM` は符号なし32ビット整数(UINT32)で値を返すことを期待しますが、実装によっては符号付き32ビット整数として解釈されてしまうことがあります。その場合、VRAMが2GBを超えると値が負数になります。
+
+以下の部分でこの問題に対応しようとしていました。
+
+```python
+if ram_bytes_signed < 0:
+    # Handle potential 32-bit signed integer overflow for > 2GB VRAM
+    ram_bytes = ram_bytes_signed + 2**32
+```
+
+この処理は2GBを超えるVRAMが負の値として返された場合に正しく値を補正するための良い試みです。しかし、今回はwmicが返す値そのものが4GBで頭打ちになっているため、このロジックを通らず、wmicが返した不正確な値（4GB）がそのまま表示されていると考えられます。
+
+### まとめと対策
+
+この問題は、wmicというツールの歴史的な経緯と仕様に起因するものであり、Pythonコードを修正しても解決は困難です。より正確なハードウェア情報を取得するためには、wmic以外の方法を検討する必要があります。
+
+#### 推奨される代替案
+
+1.  **NVIDIA System Management Interface (nvidia-smi)**
+    お使いのGPUがNVIDIA製であれば、`nvidia-smi` コマンドラインツールを使用するのが最も確実です。 このツールはGPUに関する詳細かつ正確な情報を提供します。
+    *   **コマンド例:** `nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits`
+    *   **利点:** 極めて正確で詳細な情報が得られる。
+    *   **欠点:** NVIDIA製のGPUでしか利用できない。
+
+2.  **DirectX診断ツール (dxdiag)**
+    Windowsに標準で搭載されているDirectX診断ツールのレポートからもVRAM情報を取得できます。コマンドラインからXML形式でレポートを出力させ、それを解析する方法です。
+    *   **コマンド例:** `dxdiag /x output.xml`
+    *   **利点:** GPUのメーカーを問わず利用できる。
+    *   **欠点:** レポートの生成に少し時間がかかる。XMLの解析処理を別途実装する必要がある。
+
+3.  **PowerShellを使用する**
+    PowerShellの `Get-CimInstance` コマンドレットもWMIを利用しますが、よりモダンな方法です。しかし、同じWMIプロバイダを参照するため、`Win32_VideoController` を使う限り同じ結果になる可能性が高いです。
+    *   **コマンド例:** `Get-CimInstance -ClassName Win32_VideoController | Select-Object Name, AdapterRAM`
+
+
+~~~
