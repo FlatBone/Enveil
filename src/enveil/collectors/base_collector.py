@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
-from src.enveil.core.command_executor import CommandExecutor
+from ..core.command_executor import CommandExecutor
 
 class BaseCollector(ABC):
     def __init__(self, executor: CommandExecutor):
