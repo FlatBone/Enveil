@@ -13,3 +13,8 @@ dependencies = []  # 必要な依存関係があればここに追加
 
 [project.scripts]
 enveil = "enveil.main:main"  # コマンドラインから実行可能にする
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.1",
+]
