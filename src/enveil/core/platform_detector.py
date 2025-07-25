@@ -1,9 +1,18 @@
 import platform
+from ..utils.exceptions import PlatformNotSupportedError
 
 class PlatformDetector:
     @staticmethod
     def get_platform() -> str:
-        return platform.system()
+        system = platform.system()
+        if system == 'Windows':
+            return 'windows'
+        elif system == 'Linux':
+            return 'linux'
+        elif system == 'Darwin':
+            return 'macos'
+        else:
+            raise PlatformNotSupportedError(f"Unsupported platform: {system}")
 
     @staticmethod
     def is_windows() -> bool:

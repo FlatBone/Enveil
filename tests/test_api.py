@@ -1,9 +1,7 @@
 import pytest
+import time
 from unittest.mock import MagicMock, patch
 from src.enveil.api import EnveilAPI
-from src.enveil.collectors.hardware_collector import HardwareCollector
-from src.enveil.collectors.os_collector import OSCollector
-from src.enveil.collectors.software_collector import SoftwareCollector
 
 # --- Mock Data --- #
 HARDWARE_INFO = {'CPU': 'Intel i9', 'RAM': '32GB'}
@@ -13,21 +11,46 @@ SOFTWARE_INFO = {'Python': '3.10', 'Git': '2.35'}
 @pytest.fixture
 def mock_collectors():
     """各コレクターのモックを作成"""
-    with patch('src.enveil.api.HardwareCollector') as mock_hw:
-        with patch('src.enveil.api.OSCollector') as mock_os:
-            with patch('src.enveil.api.SoftwareCollector') as mock_sw:
-                mock_hw.return_value.collect.return_value = HARDWARE_INFO
-                mock_os.return_value.collect.return_value = OS_INFO
-                mock_sw.return_value.collect.return_value = SOFTWARE_INFO
-                
-                yield mock_hw, mock_os, mock_sw
+    with (patch('src.enveil.api.HardwareCollector') as mock_hw,
+          patch('src.enveil.api.OSCollector') as mock_os,
+          patch('src.enveil.api.SoftwareCollector') as mock_sw):
+        
+        mock_hw.return_value.collect.return_value = HARDWARE_INFO
+        mock_os.return_value.collect.return_value = OS_INFO
+        mock_sw.return_value.collect.return_value = SOFTWARE_INFO
+        
+        yield mock_hw, mock_os, mock_sw
 
-def test_get_all_info(mock_collectors):
-    """すべての情報を取得するテスト"""
+def test_get_all_info_sequential(mock_collectors):
+    """すべての情報を順次取得するテスト"""
     api = EnveilAPI()
-    result = api.get_all_info()
+    result = api.get_all_info(parallel=False)
 
     assert result['hardware'] == HARDWARE_INFO
+    assert result['os'] == OS_INFO
+    assert result['software'] == SOFTWARE_INFO
+
+def test_get_all_info_parallel(mock_collectors):
+    """すべての情報を並列取得するテスト"""
+    api = EnveilAPI()
+    result = api.get_all_info(parallel=True)
+
+    assert result['hardware'] == HARDWARE_INFO
+    assert result['os'] == OS_INFO
+    assert result['software'] == SOFTWARE_INFO
+
+def test_get_all_info_timeout(mock_collectors):
+    """情報収集がタイムアウトするテスト"""
+    mock_hw, _, _ = mock_collectors
+    def slow_collect():
+        time.sleep(0.2)
+        return HARDWARE_INFO
+    mock_hw.return_value.collect.side_effect = slow_collect
+
+    api = EnveilAPI()
+    result = api.get_all_info(parallel=True, timeout=0.1)
+
+    assert "timed out" in result['hardware']
     assert result['os'] == OS_INFO
     assert result['software'] == SOFTWARE_INFO
 

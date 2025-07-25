@@ -1,7 +1,9 @@
 import pytest
 from unittest.mock import patch, MagicMock
+import logging
 
 from src.enveil import main
+from src.enveil.utils.exceptions import EnveilException
 
 @pytest.fixture
 def mock_api():
@@ -69,3 +71,10 @@ def test_main_config_file():
         mock_instance.get_software_info.return_value = {}
         run_main_with_args(['--config', 'my_config.json'])
         mock_api_class.assert_called_once_with(config_path='my_config.json')
+
+def test_main_enveil_exception(mock_api, caplog):
+    """EnveilExceptionが発生した場合にエラーログが出力されることをテスト"""
+    mock_api.get_hardware_info.side_effect = EnveilException("Test error")
+    with caplog.at_level(logging.ERROR):
+        run_main_with_args(['--hardware'])
+        assert "An error occurred: Test error" in caplog.text

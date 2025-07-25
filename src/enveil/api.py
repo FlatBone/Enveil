@@ -1,4 +1,5 @@
 from typing import Dict, Any, List, Optional
+import concurrent.futures
 
 from .core.command_executor import CommandExecutor
 from .config.config_manager import ConfigManager
@@ -20,9 +21,6 @@ class EnveilAPI:
         self.config_manager = ConfigManager(config_path=config_path) if config_path else ConfigManager()
         config = self.config_manager.load_config()
         
-        # CommandExecutorに渡す許可コマンドリストを作成
-        # design.mdのCommandExecutorの仕様と異なり、コマンド名をキーにした辞書ではなく
-        # ソフトウェア名などをキーにした辞書を受け取るように実装されているため、それに合わせる
         allowed_commands = self._prepare_allowed_commands(config)
         
         self.executor = CommandExecutor(allowed_commands=allowed_commands)
@@ -46,23 +44,45 @@ class EnveilAPI:
             "get_os_linux": "lsb_release -d | cut -f2-",
             "get_os_macos": "sw_vers -productName && sw_vers -productVersion",
         }
-        # SoftwareCollectorが使用するコマンドを追加
         software_cmds = config.get("software", {})
         commands.update(software_cmds)
         return commands
 
-    def get_all_info(self) -> Dict[str, Any]:
+    def get_all_info(self, parallel: bool = True, timeout: int = 30) -> Dict[str, Any]:
         """
         すべてのシステム情報を収集します。
+
+        Args:
+            parallel (bool): Trueの場合、並列で情報収集を実行します。
+            timeout (int): 各収集処理のタイムアウト（秒）。
 
         Returns:
             Dict[str, Any]: ハードウェア、OS、ソフトウェア情報を含む辞書
         """
-        return {
-            "hardware": self.get_hardware_info(),
-            "os": self.get_os_info(),
-            "software": self.get_software_info()
-        }
+        if not parallel:
+            return {
+                "hardware": self.get_hardware_info(),
+                "os": self.get_os_info(),
+                "software": self.get_software_info()
+            }
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            futures = {
+                'hardware': executor.submit(self.get_hardware_info),
+                'os': executor.submit(self.get_os_info),
+                'software': executor.submit(self.get_software_info)
+            }
+            
+            results = {}
+            for key, future in futures.items():
+                try:
+                    results[key] = future.result(timeout=timeout)
+                except concurrent.futures.TimeoutError:
+                    results[key] = f"{key} information collection timed out."
+                except Exception as e:
+                    results[key] = f"Error collecting {key} info: {e}"
+            
+            return results
 
     def get_hardware_info(self) -> Dict[str, str]:
         """

@@ -1,8 +1,13 @@
 import argparse
 import json
+import logging
 from typing import Dict, Any
 
 from .api import EnveilAPI
+from .utils.exceptions import EnveilException
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def display_results(results: Dict[str, Any]):
     """
@@ -15,50 +20,64 @@ def main():
     コマンドライン引数を処理し、EnveilAPIを呼び出して情報を収集・表示します。
     """
     parser = argparse.ArgumentParser(
-        description="クロスプラットフォームで動作する環境情報取得ツール Enveil。"
+        description="A cross-platform environment information tool."
     )
     parser.add_argument(
         "--hardware",
         action="store_true",
-        help="ハードウェア情報（CPU, RAM, GPU）のみを表示します。"
+        help="Display hardware information (CPU, RAM, GPU) only."
     )
     parser.add_argument(
         "--os",
         action="store_true",
-        help="OS情報のみを表示します。"
+        help="Display OS information only."
     )
     parser.add_argument(
         "--software",
         nargs='*',
-        help="指定されたソフトウェアのバージョン情報を表示します。引数なしの場合は設定されているすべてのソフトウェアが対象です。"
+        help="Display version information for specified software. If no arguments are given, all configured software will be checked."
     )
     parser.add_argument(
         "--config",
         type=str,
-        help="カスタム設定ファイルのパスを指定します。"
+        help="Specify the path to a custom configuration file."
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable detailed debug logging."
     )
 
     args = parser.parse_args()
 
-    api = EnveilAPI(config_path=args.config)
-    results = {}
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
 
-    # フラグが何も指定されていない場合はすべての情報を取得
-    no_flags = not (args.hardware or args.os or args.software is not None)
+    try:
+        api = EnveilAPI(config_path=args.config)
+        results = {}
 
-    if args.hardware or no_flags:
-        results['hardware'] = api.get_hardware_info()
+        # If no flags are specified, get all information
+        no_flags = not (args.hardware or args.os or args.software is not None)
 
-    if args.os or no_flags:
-        results['os'] = api.get_os_info()
+        if args.hardware or no_flags:
+            results['hardware'] = api.get_hardware_info()
 
-    if args.software is not None or no_flags:
-        # --softwareが引数なしで指定された場合（[]）と、フラグ自体がない場合（no_flags）を区別
-        # どちらも「すべて」と解釈し、APIにはNoneを渡す
-        software_list = args.software if args.software is not None and args.software != [] else None
-        results['software'] = api.get_software_info(software_list=software_list)
+        if args.os or no_flags:
+            results['os'] = api.get_os_info()
 
-    display_results(results)
+        if args.software is not None or no_flags:
+            software_list = args.software if args.software is not None and args.software != [] else None
+            results['software'] = api.get_software_info(software_list=software_list)
+
+        display_results(results)
+
+    except EnveilException as e:
+        logging.error(f"An error occurred: {e}")
+        print(f"[ERROR] {e}")
+    except Exception as e:
+        logging.critical(f"An unexpected error occurred: {e}", exc_info=True)
+        print(f"[CRITICAL] An unexpected error occurred. Please check the log file for details.")
 
 if __name__ == "__main__":
     main()

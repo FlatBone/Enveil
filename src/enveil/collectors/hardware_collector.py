@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from src.enveil.core.platform_detector import PlatformDetector
+from ..core.platform_detector import PlatformDetector
 
 from .base_collector import BaseCollector
 
