@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import logging
 
-from src.enveil import main
+from src.enveil.main import main
 from src.enveil.utils.exceptions import EnveilException
 
 @pytest.fixture
