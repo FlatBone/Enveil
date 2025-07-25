@@ -4,9 +4,15 @@ from src.enveil.collectors.hardware_collector import HardwareCollector
 from src.enveil.core.command_executor import CommandExecutor
 
 # --- Mock Data --- #
-WINDOWS_RAW_CPU = "Name: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz"
-WINDOWS_RAW_RAM = "16.0"
-WINDOWS_RAW_GPU = "NVIDIA GeForce RTX 3080 (8GB)"
+WINDOWS_RAW_CPU = "Name=Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz"
+WINDOWS_RAW_RAM = """
+Capacity
+17179869184
+"""
+WINDOWS_RAW_GPU = """
+Name,AdapterRAM
+NVIDIA GeForce RTX 3080,10737418240
+"""
 
 LINUX_RAW_CPU = "  Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz"
 LINUX_RAW_RAM = "16G"
@@ -19,11 +25,17 @@ def test_hardware_collector_windows(mock_is_windows):
     """Windows環境でのハードウェア情報収集をテスト"""
     # Mock CommandExecutor
     mock_executor = MagicMock(spec=CommandExecutor)
-    mock_executor.execute.side_effect = {
-        "get_cpu_windows": WINDOWS_RAW_CPU,
-        "get_ram_windows": WINDOWS_RAW_RAM,
-        "get_gpu_windows": WINDOWS_RAW_GPU,
-    }.get
+    
+    def mock_execute(command_key):
+        if command_key == "get_cpu_windows":
+            return WINDOWS_RAW_CPU
+        if command_key == "get_ram_windows":
+            return WINDOWS_RAW_RAM
+        if command_key == "get_gpu_windows":
+            return WINDOWS_RAW_GPU
+        return None
+
+    mock_executor.execute.side_effect = mock_execute
 
     # Collectorの実行
     collector = HardwareCollector(mock_executor)
@@ -32,7 +44,7 @@ def test_hardware_collector_windows(mock_is_windows):
     # 結果の検証
     assert result['CPU'] == "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz"
     assert result['RAM'] == "16.0GB"
-    assert result['GPU'] == "NVIDIA GeForce RTX 3080 (8GB)"
+    assert result['GPU'] == "NVIDIA GeForce RTX 3080 (10.0GB)"
     assert mock_executor.execute.call_count == 3
 
 @patch('src.enveil.core.platform_detector.PlatformDetector.is_windows', return_value=False)

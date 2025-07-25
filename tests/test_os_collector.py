@@ -4,7 +4,12 @@ from src.enveil.collectors.os_collector import OSCollector
 from src.enveil.core.command_executor import CommandExecutor
 
 # --- Mock Data --- #
-WINDOWS_OS_INFO = "Microsoft Windows 11 Pro"
+WINDOWS_OS_INFO = """
+BuildNumber=22631
+Caption=Microsoft Windows 11 Pro
+OSArchitecture=64-bit
+Version=10.0.22631
+"""
 LINUX_OS_INFO = "Ubuntu 22.04.3 LTS"
 MACOS_OS_INFO = "macOS Sonoma 14.5"
 
@@ -21,7 +26,10 @@ def test_os_collector_windows(mock_is_macos, mock_is_linux, mock_is_windows):
     collector = OSCollector(mock_executor)
     result = collector.collect()
 
-    assert result['OS'] == WINDOWS_OS_INFO
+    assert result['OS'] == "Microsoft Windows 11 Pro"
+    assert result['Version'] == "10.0.22631"
+    assert result['Build'] == "22631"
+    assert result['Architecture'] == "64-bit"
     mock_executor.execute.assert_called_once_with("get_os_windows")
 
 @patch('src.enveil.core.platform_detector.PlatformDetector.is_windows', return_value=False)

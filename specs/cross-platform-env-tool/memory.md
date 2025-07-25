@@ -26,4 +26,22 @@
 
 - `tasks.md`の計画に基づき、「14. 既存機能との互換性確保とリグレッションテスト」に着手します。
 - パッケージとしてインストール・実行した際に、既存のCLIの動作が変わらないことを確認するリグレッションテストを追加します。
-- 特に、対話形式のインターフェースが意図通りに動作するかを検証します。
+- 以下の変更を実施したところ、テストが失敗しています。
+```src\enveil\__init__.py
+"""
+Enveil - A secure, cross-platform tool to gather system environment information.
+"""
+from .main import main
+from .api import EnveilAPI
+
+__all__ = ['EnveilAPI', 'main']
+```
+
+```src\enveil\__init__.py
+"""
+Enveil - A secure, cross-platform tool to gather system environment information.
+"""
+from .api import EnveilAPI
+
+__all__ = ["EnveilAPI"]
+```
