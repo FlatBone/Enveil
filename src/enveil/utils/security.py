@@ -6,7 +6,9 @@ class SecurityValidator:
         r'[;&|`$()><]', 
         r'\.\./',
         r'\brm\s+',
-        r'\bdel\s+'
+        r'\bdel\s+',
+        r'\bwget\s+',
+        r'\bcurl\s+'
     ]
     
     @classmethod

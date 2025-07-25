@@ -18,3 +18,8 @@ enveil = "enveil.main:main"  # コマンドラインから実行可能にする
 dev = [
     "pytest>=7.0.1",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests",
+]

@@ -92,3 +92,55 @@ def test_get_software_info_with_list(mock_collectors):
     
     mock_sw_instance.collect.assert_called_once_with(software_list=['Python'])
 
+
+# --- Integration Tests (No Mocks) --- #
+
+# 現在のプラットフォームがWindowsかどうかを判定
+is_windows = 'win32' in __import__('sys').platform
+
+@pytest.mark.integration
+@pytest.mark.skipif(not is_windows, reason="Windows-specific integration test")
+def test_integration_get_hardware_info_on_windows():
+    """【統合テスト】Windowsでハードウェア情報を実際に取得する"""
+    api = EnveilAPI()
+    hardware_info = api.get_hardware_info()
+
+    assert hardware_info is not None
+    assert isinstance(hardware_info, dict)
+    assert "CPU" in hardware_info
+    assert "RAM" in hardware_info
+    assert "GPU" in hardware_info
+    assert hardware_info["CPU"] is not None and hardware_info["CPU"] != "N/A"
+    assert hardware_info["RAM"] is not None and hardware_info["RAM"] != "N/A"
+    # GPUは搭載されていない環境もあるため、存在のみチェック
+    assert hardware_info["GPU"] is not None
+
+@pytest.mark.integration
+@pytest.mark.skipif(not is_windows, reason="Windows-specific integration test")
+def test_integration_get_os_info_on_windows():
+    """【統合テスト】WindowsでOS情報を実際に取得する"""
+    api = EnveilAPI()
+    os_info = api.get_os_info()
+
+    assert os_info is not None
+    assert isinstance(os_info, dict)
+    assert "OS" in os_info
+    assert "Version" in os_info
+    assert "Build" in os_info
+    assert "Architecture" in os_info
+    assert "Windows" in os_info["OS"]
+
+@pytest.mark.integration
+@pytest.mark.skipif(not is_windows, reason="Windows-specific integration test")
+def test_integration_get_software_info_on_windows():
+    """【統合テスト】Windowsでソフトウェア情報を実際に取得する"""
+    api = EnveilAPI()
+    software_info = api.get_software_info()
+
+    assert software_info is not None
+    assert isinstance(software_info, dict)
+    # デフォルトでチェックされるソフトウェアのいずれかが含まれていることを確認
+    assert "Python" in software_info or "Git" in software_info
+    if "Python" in software_info:
+        assert software_info["Python"] is not None
+

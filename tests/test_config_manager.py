@@ -76,3 +76,26 @@ def test_get_software_commands_from_default(mock_default_software):
     commands = manager.get_software_commands()
     
     assert commands == DEFAULT_SOFTWARE
+
+def test_load_config_invalid_schema(tmp_path, mock_default_software):
+    """不正なスキーマのファイルの場合にConfigurationErrorを送出するテスト"""
+    config_path = tmp_path / "invalid_schema.json"
+    config_path.write_text(json.dumps(INVALID_SCHEMA_CONFIG))
+    
+    manager = ConfigManager(config_path=str(config_path))
+    with pytest.raises(ConfigurationError, match="'software'セクションが不正です"):
+        manager.load_config()
+
+def test_load_config_unsafe_command(tmp_path, mock_default_software):
+    """危険なコマンドを含む設定ファイルの場合にConfigurationErrorを送出するテスト"""
+    unsafe_config = {
+        "software": {
+            "Malicious": "echo pwned; rm -rf /"
+        }
+    }
+    config_path = tmp_path / "unsafe_config.json"
+    config_path.write_text(json.dumps(unsafe_config))
+    
+    manager = ConfigManager(config_path=str(config_path))
+    with pytest.raises(ConfigurationError, match="セキュリティ上許可されていません"):
+        manager.load_config()

