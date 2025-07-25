@@ -1,6 +1,6 @@
 import pytest
-from enveil.core.command_executor import CommandExecutor
-from enveil.utils.exceptions import SecurityError, CommandExecutionError
+from src.enveil.core.command_executor import CommandExecutor
+from src.enveil.utils.exceptions import SecurityError, CommandExecutionError
 
 # テスト用の許可されたコマンドリスト
 ALLOWED_COMMANDS = {

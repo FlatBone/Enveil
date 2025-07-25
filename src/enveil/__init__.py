@@ -1,3 +1,9 @@
-from .main import get_env_info
+"""
+Enveil - A cross-platform environment information tool.
+"""
 
-__all__ = ['get_env_info']
+from .api import EnveilAPI
+from .main import main
+
+__all__ = ['EnveilAPI', 'main']
+__version__ = "0.1.0"  # Initial version
