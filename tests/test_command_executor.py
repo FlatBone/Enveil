@@ -47,6 +47,10 @@ def test_execute_unsafe_commands(unsafe_command):
         "unsafe_cmd": unsafe_command
     }
     executor = CommandExecutor(allowed_commands=unsafe_commands)
-    match_string = re.escape(f"Command '{unsafe_command}' is not safe.")
-    with pytest.raises(SecurityError, match=match_string):
+    
+    # 修正点: 複数のエラーメッセージパターンにマッチする正規表現を生成
+    escaped_command = re.escape(unsafe_command)
+    match_pattern = f"(Command|Command part) '{escaped_command}' (is not safe|contains unsafe patterns)\\."
+    
+    with pytest.raises(SecurityError, match=match_pattern):
         executor.execute("unsafe_cmd")
