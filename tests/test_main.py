@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 import logging
+from pathlib import Path
 
 from src.enveil.main import main
 from src.enveil.utils.exceptions import EnveilException
@@ -62,15 +63,39 @@ def test_main_multiple_flags(mock_api):
     mock_api.get_os_info.assert_called_once()
     mock_api.get_software_info.assert_not_called()
 
-def test_main_config_file():
-    """--configフラグで設定ファイルが渡されることをテスト"""
-    with patch('src.enveil.main.EnveilAPI') as mock_api_class:
-        mock_instance = mock_api_class.return_value
-        mock_instance.get_hardware_info.return_value = {}
-        mock_instance.get_os_info.return_value = {}
-        mock_instance.get_software_info.return_value = {}
-        run_main_with_args(['--config', 'my_config.json'])
-        mock_api_class.assert_called_once_with(config_path='my_config.json')
+@pytest.mark.parametrize(
+    "found_path_obj",
+    [
+        Path('/home/user/.config/enveil/config.json'),
+        None
+    ],
+    ids=["config_found", "config_not_found"]
+)
+@patch('src.enveil.main.ConfigManager.find_config_file')
+def test_main_config_flag(mock_find, found_path_obj, capsys):
+    """--configフラグが設定ファイルのパスまたはメッセージを正しく表示するテスト"""
+    mock_find.return_value = found_path_obj
+
+    # 期待される出力を動的に生成する
+    if found_path_obj:
+        # main.pyの実装と同様にf-stringでPathオブジェクトを展開し、
+        # OS固有の正しいパス表現にする
+        expected_output = f"Configuration file in use: {found_path_obj}"
+    else:
+        expected_output = "No custom configuration file found. Using default software list."
+
+    run_main_with_args(['--config'])
+    captured = capsys.readouterr()
+
+    # 末尾の改行を削除し、完全に一致するかを検証する
+    assert captured.out.strip() == expected_output
+
+@patch('src.enveil.main.EnveilAPI')
+def test_main_use_default_flag(mock_api_class):
+    """--use-defaultフラグがEnveilAPIに正しく渡されることをテスト"""
+    # --hardwareを付けてAPI呼び出しパスを有効にする
+    run_main_with_args(['--hardware', '--use-default'])
+    mock_api_class.assert_called_once_with(use_default_config=True)
 
 def test_main_enveil_exception(mock_api, caplog):
     """EnveilExceptionが発生した場合にエラーログが出力されることをテスト"""

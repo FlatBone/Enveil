@@ -11,17 +11,16 @@ class EnveilAPI:
     """
     Enveilライブラリの主要APIを提供します。
     """
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, use_default_config: bool = False):
         """
         コンストラクタ
 
         Args:
-            config_path (Optional[str]): カスタム設定ファイルのパス
+            use_default_config (bool): Trueの場合、カスタム設定を無視してデフォルト設定を強制的に使用します。
         """
-        self.config_manager = ConfigManager(config_path=config_path) if config_path else ConfigManager()
-        config = self.config_manager.load_config()
+        self.config_manager = ConfigManager(force_default=use_default_config)
         
-        allowed_commands = self._prepare_allowed_commands(config)
+        allowed_commands = self._prepare_allowed_commands()
         
         self.executor = CommandExecutor(allowed_commands=allowed_commands)
         
@@ -29,7 +28,7 @@ class EnveilAPI:
         self.os_collector = OSCollector(self.executor)
         self.software_collector = SoftwareCollector(self.executor, self.config_manager)
 
-    def _prepare_allowed_commands(self, config: Dict[str, Any]) -> Dict[str, str]:
+    def _prepare_allowed_commands(self) -> Dict[str, str]:
         """コレクターが使用するすべての許可コマンドを準備します。"""
         commands = {
             # HardwareCollector Commands
@@ -50,7 +49,8 @@ class EnveilAPI:
             "get_os_linux": "lsb_release -ds || grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '\"'",
             "get_os_macos": "sw_vers",
         }
-        software_cmds = config.get("software", {})
+        # ConfigManagerから整形済みのソフトウェアコマンドを取得
+        software_cmds = self.config_manager.get_software_commands()
         commands.update(software_cmds)
         return commands
 

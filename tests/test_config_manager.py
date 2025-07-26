@@ -23,6 +23,7 @@ INVALID_SCHEMA_CONFIG = {
     "software": ["python", "git"] 
 }
 
+# This represents the source for the default config
 DEFAULT_SOFTWARE = {
     "Python": "python --version || python3 --version",
     "Git": "git --version",
@@ -34,59 +35,73 @@ def mock_default_software():
     with patch('src.enveil.config.config_manager.DEFAULT_SOFTWARE', DEFAULT_SOFTWARE) as mock:
         yield mock
 
-def test_load_config_success(tmp_path, mock_default_software):
+@patch('src.enveil.config.config_manager.ConfigManager.find_config_file')
+def test_load_config_success(mock_find_config, tmp_path, mock_default_software):
     """正常な設定ファイルを読み込めることをテスト"""
     config_path = tmp_path / "config.json"
     config_path.write_text(json.dumps(VALID_CONFIG))
+    mock_find_config.return_value = config_path
     
-    manager = ConfigManager(config_path=str(config_path))
+    manager = ConfigManager()
     config = manager.load_config()
     
     assert config == VALID_CONFIG
 
-def test_load_config_file_not_found(mock_default_software):
+@patch('src.enveil.config.config_manager.ConfigManager.find_config_file', return_value=None)
+def test_load_config_file_not_found(mock_find, mock_default_software):
     """設定ファイルが存在しない場合にデフォルト設定を返すことをテスト"""
-    manager = ConfigManager(config_path="non_existent_config.json")
+    manager = ConfigManager()
     config = manager.load_config()
     
-    assert config['software'] == DEFAULT_SOFTWARE
+    # The loaded default config is structured
+    expected_software_config = {name: {'command': cmd} for name, cmd in DEFAULT_SOFTWARE.items()}
+    assert config['software'] == expected_software_config
 
-def test_load_config_invalid_json(tmp_path, mock_default_software):
+@patch('src.enveil.config.config_manager.ConfigManager.find_config_file')
+def test_load_config_invalid_json(mock_find_config, tmp_path, mock_default_software):
     """不正なJSONファイルの場合にConfigurationErrorを送出するテスト"""
     config_path = tmp_path / "invalid.json"
     config_path.write_text("this is not json")
-    
-    manager = ConfigManager(config_path=str(config_path))
+    mock_find_config.return_value = config_path
+
+    manager = ConfigManager()
     with pytest.raises(ConfigurationError, match="不正なJSON形式です"):
         manager.load_config()
 
-def test_get_software_commands_from_file(tmp_path, mock_default_software):
+@patch('src.enveil.config.config_manager.ConfigManager.find_config_file')
+def test_get_software_commands_from_file(mock_find_config, tmp_path, mock_default_software):
     """設定ファイルからソフトウェアコマンドを取得するテスト"""
     config_path = tmp_path / "config.json"
     config_path.write_text(json.dumps(VALID_CONFIG))
+    mock_find_config.return_value = config_path
     
-    manager = ConfigManager(config_path=str(config_path))
+    manager = ConfigManager()
     commands = manager.get_software_commands()
     
     assert commands == VALID_CONFIG['software']
 
-def test_get_software_commands_from_default(mock_default_software):
+@patch('src.enveil.config.config_manager.ConfigManager.find_config_file', return_value=None)
+def test_get_software_commands_from_default(mock_find, mock_default_software):
     """デフォルト設定からソフトウェアコマンドを取得するテスト"""
-    manager = ConfigManager(config_path="non_existent_config.json")
+    manager = ConfigManager()
     commands = manager.get_software_commands()
     
+    # This should return the flattened dict, which matches the original DEFAULT_SOFTWARE
     assert commands == DEFAULT_SOFTWARE
 
-def test_load_config_invalid_schema(tmp_path, mock_default_software):
+@patch('src.enveil.config.config_manager.ConfigManager.find_config_file')
+def test_load_config_invalid_schema(mock_find_config, tmp_path, mock_default_software):
     """不正なスキーマのファイルの場合にConfigurationErrorを送出するテスト"""
     config_path = tmp_path / "invalid_schema.json"
     config_path.write_text(json.dumps(INVALID_SCHEMA_CONFIG))
-    
-    manager = ConfigManager(config_path=str(config_path))
+    mock_find_config.return_value = config_path
+
+    manager = ConfigManager()
     with pytest.raises(ConfigurationError, match="'software'セクションが不正です"):
         manager.load_config()
 
-def test_load_config_unsafe_command(tmp_path, mock_default_software):
+@patch('src.enveil.config.config_manager.ConfigManager.find_config_file')
+def test_load_config_unsafe_command(mock_find_config, tmp_path, mock_default_software):
     """危険なコマンドを含む設定ファイルの場合にConfigurationErrorを送出するテスト"""
     unsafe_config = {
         "software": {
@@ -95,7 +110,8 @@ def test_load_config_unsafe_command(tmp_path, mock_default_software):
     }
     config_path = tmp_path / "unsafe_config.json"
     config_path.write_text(json.dumps(unsafe_config))
+    mock_find_config.return_value = config_path
     
-    manager = ConfigManager(config_path=str(config_path))
+    manager = ConfigManager()
     with pytest.raises(ConfigurationError, match="セキュリティ上許可されていません"):
         manager.load_config()

@@ -4,6 +4,7 @@ import logging
 from typing import Dict, Any
 
 from .api import EnveilAPI
+from .config.config_manager import ConfigManager
 from .utils.exceptions import EnveilException
 
 # Setup logging
@@ -39,8 +40,13 @@ def main():
     )
     parser.add_argument(
         "--config",
-        type=str,
-        help="Specify the path to a custom configuration file."
+        action="store_true",
+        help="Display the path to the configuration file that would be used and exit."
+    )
+    parser.add_argument(
+        "-d", "--use-default",
+        action="store_true",
+        help="Force use of the default software list, ignoring any custom config.json."
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -53,8 +59,18 @@ def main():
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    # --configが指定されたら、設定ファイルのパスを表示して終了
+    if args.config:
+        config_path = ConfigManager().find_config_file()
+        if config_path:
+            print(f"Configuration file in use: {config_path}")
+        else:
+            print("No custom configuration file found. Using default software list.")
+        return
+
     try:
-        api = EnveilAPI(config_path=args.config)
+        # -d (--use-default) フラグをAPIに渡す
+        api = EnveilAPI(use_default_config=args.use_default)
         results = {}
 
         # If no flags are specified, get all information
