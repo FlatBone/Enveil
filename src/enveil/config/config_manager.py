@@ -34,6 +34,15 @@ class ConfigManager:
             
         return paths
 
+    def get_potential_config_paths(self) -> List[Path]:
+        """
+        設定ファイルとして探索される可能性のあるパスのリストを返します。
+        
+        Returns:
+            List[Path]: 探索パスのリスト。
+        """
+        return self._get_config_paths()
+
     def find_config_file(self) -> Optional[Path]:
         """有効な設定ファイルを探索し、そのパスを返します。"""
         for path in self._get_config_paths():

@@ -61,11 +61,16 @@ def main():
 
     # --configが指定されたら、設定ファイルのパスを表示して終了
     if args.config:
-        config_path = ConfigManager().find_config_file()
+        config_manager = ConfigManager()
+        config_path = config_manager.find_config_file()
         if config_path:
             print(f"Configuration file in use: {config_path}")
         else:
             print("No custom configuration file found. Using default software list.")
+            print("\nTo customize, create a 'config.json' file in one of the following locations (highest priority first):")
+            potential_paths = config_manager.get_potential_config_paths()
+            for path in potential_paths:
+                print(f"  - {path}")
         return
 
     try:
