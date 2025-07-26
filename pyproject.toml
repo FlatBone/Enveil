@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "enveil"
-version = "0.1.0"
+version = "1.0.0"
 description = "A secure, cross-platform tool to gather system environment information (hardware, OS, software)."
-authors = [{name = "FlatBone", email = "contact@example.com"}]
+authors = [{name = "FlatBone", email = "151115967+FlatBone@users.noreply.github.com"}]
 license = { file = "LICENSE" }
 readme = "README.md"
 requires-python = ">=3.8"
