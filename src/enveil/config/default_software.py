@@ -1,5 +1,5 @@
 DEFAULT_SOFTWARE = {
-    "Python": "python --version || python3 --version",
+    "Python": "python --version",
     "Git": "git --version",
     "Docker": "docker --version",
     "Node.js": "node -v",

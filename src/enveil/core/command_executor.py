@@ -12,12 +12,17 @@ class CommandExecutor:
             raise SecurityError(f"Command '{command_key}' is not allowed.")
 
         command_string = self.allowed_commands[command_key]
+
+        # Validate the entire command string first
+        if not SecurityValidator.is_command_safe(command_string):
+            raise SecurityError(f"Command '{command_string}' contains unsafe patterns.")
+
         commands_to_try = [cmd.strip() for cmd in command_string.split('||')]
 
         for command in commands_to_try:
+            # Individual command parts should also be safe, although the main check is above
             if not SecurityValidator.is_command_safe(command):
-                # Skip this specific unsafe command and try the next one
-                continue
+                 raise SecurityError(f"Command part '{command}' contains unsafe patterns.")
 
             try:
                 # shell=True is a risk, but we rely on is_command_safe
