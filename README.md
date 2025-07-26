@@ -1,3 +1,4 @@
+
 # Enveil
 
 [![PyPI version](https://badge.fury.io/py/enveil.svg)](https://badge.fury.io/py/enveil)
@@ -76,7 +77,7 @@ print(json.dumps(all_info, indent=2))
 
 ### Fetching Specific Data
 
-You can also fetch specific categories of data.
+You can also fetch specific categories of data. The output format is tailored for each operating system.
 
 ```python
 from enveil import EnveilAPI
@@ -86,12 +87,36 @@ api = EnveilAPI()
 # Get just the hardware details
 hardware_info = api.get_hardware_info()
 print(hardware_info)
-# {'cpu': 'Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz', 'ram': '32.0 GB', 'gpu': 'NVIDIA GeForce RTX 3070'}
 
 # Get just the OS details
 os_info = api.get_os_info()
 print(os_info)
-# {'name': 'Windows', 'version': '10', 'build': '22631', 'architecture': '64-bit'}
+```
+
+**Example Output on Windows:**
+```
+# hardware_info on Windows
+{'CPU': 'Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz', 'RAM': '32.0GB', 'GPU': 'NVIDIA GeForce RTX 3070 (8.0GB)'}
+
+# os_info on Windows
+{'OS': 'Microsoft Windows 11 Pro', 'Version': '10.0.22631', 'Build': '22631', 'Architecture': '64-bit'}
+```
+
+**Example Output on macOS:**
+```# hardware_info on macOS
+{'CPU': 'Apple M2 Pro', 'RAM': '16.0GB', 'GPU': 'Apple M2 Pro (16 GB)'}
+
+# os_info on macOS
+{'OS': 'macOS', 'Version': '14.5', 'Build': '23F79'}
+```
+
+**Example Output on Linux:**
+```
+# hardware_info on Linux
+{'CPU': 'AMD Ryzen 9 5900X 12-Core Processor', 'RAM': '62.7GB', 'GPU': 'NVIDIA GeForce RTX 3080'}
+
+# os_info on Linux
+{'OS': 'Ubuntu 22.04.3 LTS'}
 ```
 
 ## Configuration
