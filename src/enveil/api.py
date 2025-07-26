@@ -36,6 +36,8 @@ class EnveilAPI:
             "get_cpu_windows": "wmic cpu get name /format:list",
             "get_ram_windows": "wmic memorychip get capacity",
             "get_gpu_windows": "wmic path win32_videocontroller get name,adapterram /format:csv",
+            "get_gpu_name_nvidia": "nvidia-smi --query-gpu=name --format=csv,noheader",
+            "get_gpu_mem_nvidia": "nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits",
             "get_cpu_linux": "lscpu | grep 'Model name' | sed 's/.*Model name:[^A-Za-z0-9]*//'",
             "get_ram_linux": "free -h | grep Mem | awk '{print $2}'",
             "get_gpu_linux": "lspci | grep -i vga | sed 's/.*controller:[^A-Za-z0-9]*//'",

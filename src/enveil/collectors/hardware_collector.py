@@ -22,8 +22,7 @@ class HardwareCollector(BaseCollector):
                 info["RAM"] = "N/A"
 
             try:
-                gpu_raw = self.executor.execute("get_gpu_windows")
-                info["GPU"] = self._format_gpu_windows(gpu_raw)
+                info["GPU"] = self._get_windows_gpu_info()
             except Exception:
                 info["GPU"] = "N/A"
         else:
@@ -35,6 +34,34 @@ class HardwareCollector(BaseCollector):
             except Exception:
                 pass
         return info
+
+    def _get_windows_gpu_info(self) -> str:
+        """
+        WindowsのGPU情報を収集する。4.0GBの制限を考慮し、まずnvidia-smiを試行し、失敗した場合はwmicにフォールバックする。
+        """
+        # 1. Try nvidia-smi first
+        try:
+            gpu_names_raw = self.executor.execute("get_gpu_name_nvidia")
+            gpu_mems_raw = self.executor.execute("get_gpu_mem_nvidia")
+            
+            names = [name.strip() for name in gpu_names_raw.strip().splitlines()]
+            mems_mib = [int(mem.strip()) for mem in gpu_mems_raw.strip().splitlines()]
+
+            if len(names) != len(mems_mib):
+                 raise ValueError("Mismatch between GPU names and memory info from nvidia-smi.")
+
+            gpus = []
+            for name, mem_mib in zip(names, mems_mib):
+                # nvidia-smi provides MiB (1024*1024 bytes). Convert to GiB for the "GB" display.
+                mem_gb = mem_mib / 1024
+                gpus.append(f"{name} ({mem_gb:.1f}GB)")
+            
+            return " / ".join(gpus) if gpus else "N/A"
+
+        except Exception:
+            # 2. Fallback to wmic
+            gpu_raw = self.executor.execute("get_gpu_windows")
+            return self._format_gpu_windows(gpu_raw)
 
     def _format_cpu_windows(self, raw_cpu: str) -> str:
         """wmicからのCPU情報を整形"""
