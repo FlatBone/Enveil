@@ -11,7 +11,11 @@ OSArchitecture=64-bit
 Version=10.0.22631
 """
 LINUX_OS_INFO = "Ubuntu 22.04.3 LTS"
-MACOS_OS_INFO = "macOS Sonoma 14.5"
+MACOS_OS_INFO_SW_VERS = """
+ProductName:    macOS
+ProductVersion: 14.5
+BuildVersion:   23F79
+"""
 
 # --- Test Cases --- #
 
@@ -49,15 +53,17 @@ def test_os_collector_linux(mock_is_macos, mock_is_linux, mock_is_windows):
 @patch('src.enveil.core.platform_detector.PlatformDetector.is_windows', return_value=False)
 @patch('src.enveil.core.platform_detector.PlatformDetector.is_linux', return_value=False)
 @patch('src.enveil.core.platform_detector.PlatformDetector.is_macos', return_value=True)
-def test_os_collector_macos(mock_is_macos, mock_is_linux, mock_is_windows):
-    """macOS環境でのOS情報収集をテスト"""
+def test_os_collector_macos_detailed(mock_is_macos, mock_is_linux, mock_is_windows):
+    """macOS環境での詳細なOS情報収集をテスト"""
     mock_executor = MagicMock(spec=CommandExecutor)
-    mock_executor.execute.return_value = MACOS_OS_INFO
+    mock_executor.execute.return_value = MACOS_OS_INFO_SW_VERS
 
     collector = OSCollector(mock_executor)
     result = collector.collect()
 
-    assert result['OS'] == MACOS_OS_INFO
+    assert result['OS'] == "macOS"
+    assert result['Version'] == "14.5"
+    assert result['Build'] == "23F79"
     mock_executor.execute.assert_called_once_with("get_os_macos")
 
 @patch('src.enveil.core.platform_detector.PlatformDetector.is_windows', return_value=True)

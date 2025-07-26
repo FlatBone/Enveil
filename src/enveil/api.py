@@ -39,12 +39,16 @@ class EnveilAPI:
             "get_gpu_name_nvidia": "nvidia-smi --query-gpu=name --format=csv,noheader",
             "get_gpu_mem_nvidia": "nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits",
             "get_cpu_linux": "lscpu | grep 'Model name' | sed 's/.*Model name:[^A-Za-z0-9]*//'",
-            "get_ram_linux": "free -h | grep Mem | awk '{print $2}'",
+            "get_ram_linux": "free -b | grep Mem | awk '{print $2}'",
             "get_gpu_linux": "lspci | grep -i vga | sed 's/.*controller:[^A-Za-z0-9]*//'",
+            "get_cpu_macos": "sysctl -n machdep.cpu.brand_string",
+            "get_ram_macos": "sysctl -n hw.memsize",
+            "get_gpu_name_macos": "system_profiler SPDisplaysDataType | grep 'Chipset Model' | awk -F': ' '{print $2}'",
+            "get_gpu_vram_macos": "system_profiler SPDisplaysDataType | grep 'VRAM' | awk -F': ' '{print $2}' | head -n 1",
             # OSCollector Commands
             "get_os_windows": "wmic os get caption,version,buildnumber,osarchitecture /format:list",
-            "get_os_linux": "lsb_release -d | cut -f2-",
-            "get_os_macos": "sw_vers -productName && sw_vers -productVersion",
+            "get_os_linux": "lsb_release -ds || grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '\"'",
+            "get_os_macos": "sw_vers",
         }
         software_cmds = config.get("software", {})
         commands.update(software_cmds)

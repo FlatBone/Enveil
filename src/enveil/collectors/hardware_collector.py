@@ -25,14 +25,41 @@ class HardwareCollector(BaseCollector):
                 info["GPU"] = self._get_windows_gpu_info()
             except Exception:
                 info["GPU"] = "N/A"
-        else:
-            # Linux/macOSのロジック
+        
+        elif PlatformDetector.is_macos():
+            try:
+                info["CPU"] = self.executor.execute("get_cpu_macos").strip()
+            except Exception:
+                info["CPU"] = "N/A"
+            try:
+                ram_raw = self.executor.execute("get_ram_macos")
+                info["RAM"] = self._format_ram_bytes(ram_raw)
+            except Exception:
+                info["RAM"] = "N/A"
+            try:
+                name = self.executor.execute("get_gpu_name_macos").strip()
+                try:
+                    vram = self.executor.execute("get_gpu_vram_macos").strip()
+                    info["GPU"] = f"{name} ({vram})" if vram else name
+                except Exception:
+                    info["GPU"] = name # Fallback to just name if VRAM fails
+            except Exception:
+                info["GPU"] = "N/A"
+
+        else: # Linux
             try:
                 info["CPU"] = self.executor.execute("get_cpu_linux").strip()
-                info["RAM"] = self.executor.execute("get_ram_linux")
-                info["GPU"] = self.executor.execute("get_gpu_linux")
             except Exception:
-                pass
+                info["CPU"] = "N/A"
+            try:
+                ram_raw = self.executor.execute("get_ram_linux")
+                info["RAM"] = self._format_ram_bytes(ram_raw)
+            except Exception:
+                info["RAM"] = "N/A"
+            try:
+                info["GPU"] = self.executor.execute("get_gpu_linux").strip()
+            except Exception:
+                info["GPU"] = "N/A"
         return info
 
     def _get_windows_gpu_info(self) -> str:
@@ -84,6 +111,17 @@ class HardwareCollector(BaseCollector):
                 return "N/A"
             total_capacity_gb = total_capacity_bytes / (1024**3)
             return f"{total_capacity_gb:.1f}GB"
+        except (ValueError, TypeError):
+            return "N/A"
+
+    def _format_ram_bytes(self, raw_bytes: str) -> str:
+        """BytesをGBに変換して整形 (Linux/macOS用)"""
+        try:
+            bytes_val = int(raw_bytes.strip())
+            if bytes_val == 0:
+                return "N/A"
+            gb_val = bytes_val / (1024**3)
+            return f"{gb_val:.1f}GB"
         except (ValueError, TypeError):
             return "N/A"
 

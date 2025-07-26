@@ -18,8 +18,13 @@ NVIDIA_SMI_NAME = "NVIDIA GeForce RTX 5070"
 NVIDIA_SMI_MEM_MIB = "12288"  # 12GB in MiB
 
 LINUX_RAW_CPU = "  Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz"
-LINUX_RAW_RAM = "16G"
+LINUX_RAW_RAM_BYTES = "16882286592" # approx 15.7GB
 LINUX_RAW_GPU = "NVIDIA GeForce RTX 3080"
+
+MACOS_RAW_CPU = "Apple M2 Max"
+MACOS_RAW_RAM_BYTES = "34359738368" # 32.0GB
+MACOS_RAW_GPU_NAME = "Apple M2 Max"
+MACOS_RAW_GPU_VRAM = "10 GB"
 
 
 # --- Test Cases --- #
@@ -98,14 +103,15 @@ def test_hardware_collector_windows_all_gpu_fail(mock_is_windows):
     assert result['GPU'] == "N/A"
 
 
+@patch('src.enveil.core.platform_detector.PlatformDetector.is_macos', return_value=False)
 @patch('src.enveil.core.platform_detector.PlatformDetector.is_windows', return_value=False)
-def test_hardware_collector_linux(mock_is_windows):
+def test_hardware_collector_linux(mock_is_windows, mock_is_macos):
     """Linux環境でのハードウェア情報収集をテスト"""
     mock_executor = MagicMock(spec=CommandExecutor)
     
     def mock_execute(command_key):
         if command_key == "get_cpu_linux": return LINUX_RAW_CPU
-        if command_key == "get_ram_linux": return LINUX_RAW_RAM
+        if command_key == "get_ram_linux": return LINUX_RAW_RAM_BYTES
         if command_key == "get_gpu_linux": return LINUX_RAW_GPU
         return ""
 
@@ -115,6 +121,53 @@ def test_hardware_collector_linux(mock_is_windows):
     result = collector.collect()
 
     assert result['CPU'] == "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz"
-    assert result['RAM'] == "16G"
+    assert result['RAM'] == "15.7GB"
     assert result['GPU'] == "NVIDIA GeForce RTX 3080"
     assert mock_executor.execute.call_count == 3
+
+@patch('src.enveil.core.platform_detector.PlatformDetector.is_windows', return_value=False)
+@patch('src.enveil.core.platform_detector.PlatformDetector.is_macos', return_value=True)
+def test_hardware_collector_macos(mock_is_macos, mock_is_windows):
+    """macOS環境でのハードウェア情報収集をテスト"""
+    mock_executor = MagicMock(spec=CommandExecutor)
+    
+    def mock_execute(command_key):
+        if command_key == "get_cpu_macos": return MACOS_RAW_CPU
+        if command_key == "get_ram_macos": return MACOS_RAW_RAM_BYTES
+        if command_key == "get_gpu_name_macos": return MACOS_RAW_GPU_NAME
+        if command_key == "get_gpu_vram_macos": return MACOS_RAW_GPU_VRAM
+        return ""
+
+    mock_executor.execute.side_effect = mock_execute
+
+    collector = HardwareCollector(mock_executor)
+    result = collector.collect()
+
+    assert result['CPU'] == "Apple M2 Max"
+    assert result['RAM'] == "32.0GB"
+    assert result['GPU'] == "Apple M2 Max (10 GB)"
+    assert mock_executor.execute.call_count == 4
+
+
+@patch('src.enveil.core.platform_detector.PlatformDetector.is_windows', return_value=False)
+@patch('src.enveil.core.platform_detector.PlatformDetector.is_macos', return_value=True)
+def test_hardware_collector_macos_gpu_vram_fail(mock_is_macos, mock_is_windows):
+    """【macOS】GPUのVRAM取得に失敗した場合のテスト"""
+    mock_executor = MagicMock(spec=CommandExecutor)
+    
+    def mock_execute(command_key):
+        if command_key == "get_cpu_macos": return MACOS_RAW_CPU
+        if command_key == "get_ram_macos": return MACOS_RAW_RAM_BYTES
+        if command_key == "get_gpu_name_macos": return MACOS_RAW_GPU_NAME
+        if command_key == "get_gpu_vram_macos": raise CommandExecutionError("Failed to get VRAM")
+        return ""
+
+    mock_executor.execute.side_effect = mock_execute
+
+    collector = HardwareCollector(mock_executor)
+    result = collector.collect()
+
+    assert result['CPU'] == "Apple M2 Max"
+    assert result['RAM'] == "32.0GB"
+    assert result['GPU'] == "Apple M2 Max" # Should fallback to just name
+    assert mock_executor.execute.call_count == 4

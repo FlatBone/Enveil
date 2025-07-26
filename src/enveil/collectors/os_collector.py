@@ -19,11 +19,10 @@ class OSCollector(BaseCollector):
             if self.platform_detector.is_windows():
                 return self._get_windows_info()
             elif self.platform_detector.is_linux():
-                # この部分は未実装のため、基本的な情報を返す
-                return {"OS": self.executor.execute("get_os_linux")}
+                os_str = self.executor.execute("get_os_linux").strip()
+                return {"OS": os_str if os_str else "N/A"}
             elif self.platform_detector.is_macos():
-                # この部分は未実装のため、基本的な情報を返す
-                return {"OS": self.executor.execute("get_os_macos")}
+                return self._get_macos_info()
             else:
                 return {"OS": "Unsupported OS"}
         except Exception:
@@ -52,4 +51,28 @@ class OSCollector(BaseCollector):
                 info["Build"] = value
             elif key == "OSArchitecture":
                 info["Architecture"] = value
+        return info
+
+    def _get_macos_info(self) -> Dict[str, str]:
+        """macOSの詳細なOS情報を取得します。"""
+        raw_info = self.executor.execute("get_os_macos")
+        info = {}
+        for line in raw_info.strip().splitlines():
+            if not line:
+                continue
+            parts = line.split(":", 1)
+            if len(parts) == 2:
+                key, value = parts
+                key = key.strip()
+                value = value.strip()
+                if key == "ProductName":
+                    info["OS"] = value
+                elif key == "ProductVersion":
+                    info["Version"] = value
+                elif key == "BuildVersion":
+                    info["Build"] = value
+        
+        info.setdefault("OS", "N/A")
+        info.setdefault("Version", "N/A")
+        info.setdefault("Build", "N/A")
         return info
