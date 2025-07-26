@@ -1,0 +1,6 @@
+{
+  "software": {
+    "MyCustomTool": "/path/to/my/tool --version",
+    "AnotherTool": "another-tool -v"
+  }
+}

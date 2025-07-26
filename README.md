@@ -121,21 +121,68 @@ print(os_info)
 
 ## Configuration
 
-To check for custom software, create a `config.json` file in your working directory or in a standard config location (`~/.config/enveil/config.json` or `C:\Users\YourUser\AppData\Local\enveil\config.json`).
+Enveil checks for a list of common software by default (Python, Node.js, Docker, Git, etc.). You can fully customize this list by creating a `config.json` file.
+
+This allows you to add your own specific tools or limit the output to only the software you care about.
+
+**When a `config.json` file is present, it completely overrides the default software list.**
+
+### How to Configure
+
+1.  Create a file named `config.json` in one of the following locations:
+    *   Your current working directory (where you run the `enveil` command).
+    *   A system-wide configuration directory:
+        *   **Linux/macOS:** `~/.config/enveil/config.json`
+        *   **Windows:** `C:\Users\YourUser\AppData\Local\enveil\config.json`
+
+2.  Define the software you want to check inside the file.
+
+### Example: Checking for Specific Tools
+
+If you only want to check for `Poetry` and `Git`, and ignore everything else, your `config.json` would look like this:
 
 **Example `config.json`:**
-
 ```json
 {
   "software": {
-    "Python": {
-      "command": "python --version || python3 --version"
+    "Poetry": {
+      "command": "poetry --version"
     },
-    "Node.js": {
-      "command": "node -v"
+    "Git": {
+      "command": "git --version"
     }
   }
 }
+```
+
+### Example: Adding a Custom Tool to the Defaults
+
+The default list is extensive, but if you want to add a tool that isn't included, you can copy the default list and add your own. For example, to add `hugo`:
+
+**Example `config.json` to extend defaults:**
+```json
+{
+  "software": {
+    "Python": { "command": "python3 --version || python --version" },
+    "Node.js": { "command": "node -v" },
+    "Java": { "command": "java -version" },
+    "Go": { "command": "go version" },
+    "Rust": { "command": "cargo --version" },
+    "pip": { "command": "python3 -m pip --version || python -m pip --version" },
+    "npm": { "command": "npm -v" },
+    "Yarn": { "command": "yarn -v" },
+    "pnpm": { "command": "pnpm -v" },
+    "Git": { "command": "git --version" },
+    "Docker": { "command": "docker --version" },
+    "Terraform": { "command": "terraform version" },
+    "kubectl": { "command": "kubectl version --client" },
+    "AWS CLI": { "command": "aws --version" },
+    "Hugo": { "command": "hugo version" }
+  }
+}
+```
+
+By default, Enveil provides a comprehensive list of major tools. Feel free to modify your `config.json` to reduce this list if it's too extensive, add tools that are missing, or otherwise tailor it to your exact preferences.
 ```
 
 Enveil will automatically pick up this configuration and include the specified software in its report.
