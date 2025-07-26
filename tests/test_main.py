@@ -71,29 +71,38 @@ def test_main_multiple_flags(mock_api):
     ],
     ids=["config_found", "config_not_found"]
 )
-@patch('src.enveil.main.ConfigManager.find_config_file')
-def test_main_config_flag(mock_find, found_path_obj, capsys):
+@patch('src.enveil.main.ConfigManager')
+def test_main_config_flag(mock_config_manager, found_path_obj, capsys):
     """--configフラグが設定ファイルのパスまたはメッセージを正しく表示するテスト"""
-    mock_find.return_value = found_path_obj
-
-    # 期待される出力を動的に生成する
-    if found_path_obj:
-        # main.pyの実装と同様にf-stringでPathオブジェクトを展開し、
-        # OS固有の正しいパス表現にする
-        expected_output = f"Configuration file in use: {found_path_obj}"
-    else:
-        expected_output = "No custom configuration file found. Using default software list."
+    # モックインスタンスのセットアップ
+    mock_instance = mock_config_manager.return_value
+    mock_instance.find_config_file.return_value = found_path_obj
+    
+    # モックするパスのリスト
+    potential_paths = [
+        Path('/fake/cwd/config.json'),
+        Path('/home/user/.config/enveil/config.json')
+    ]
+    mock_instance.get_potential_config_paths.return_value = potential_paths
 
     run_main_with_args(['--config'])
     captured = capsys.readouterr()
 
-    # 末尾の改行を削除し、完全に一致するかを検証する
-    assert captured.out.strip() == expected_output
+    if found_path_obj:
+        # 【ファイルが見つかった場合】
+        expected_output = f"Configuration file in use: {found_path_obj}"
+        assert captured.out.strip() == expected_output
+    else:
+        # 【ファイルが見つからない場合】
+        assert "No custom configuration file found" in captured.out
+        assert "To customize, create a 'config.json' file" in captured.out
+        # Pathオブジェクトを文字列に変換して比較することで、OS依存の問題を解消
+        assert str(potential_paths[0]) in captured.out
+        assert str(potential_paths[1]) in captured.out
 
 @patch('src.enveil.main.EnveilAPI')
 def test_main_use_default_flag(mock_api_class):
     """--use-defaultフラグがEnveilAPIに正しく渡されることをテスト"""
-    # --hardwareを付けてAPI呼び出しパスを有効にする
     run_main_with_args(['--hardware', '--use-default'])
     mock_api_class.assert_called_once_with(use_default_config=True)
 
