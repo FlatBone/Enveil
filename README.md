@@ -17,6 +17,19 @@ It is designed with security as a priority, preventing command injection by vali
 - **Extensible**: Easily define custom software version checks through a simple configuration file.
 - **Dual Use**: Can be used as a standalone CLI tool or as a library in your Python projects.
 
+## Operating Environment
+
+Enveil is designed to run in the following environments. Administrator (root) privileges are not required for core functionality.
+
+-   **Python Version**: `3.8` or later
+
+-   **Operating Systems**:
+    -   **Windows**: Windows 10, Windows 11, and corresponding Windows Server versions.
+        -   Utilizes standard commands such as `wmic` and `nvidia-smi` (for NVIDIA GPUs).
+    -   **macOS**: macOS on both Intel and Apple Silicon (M1, M2, etc.) hardware.
+        -   Utilizes standard OS commands like `sysctl` and `system_profiler`.
+    -   **Linux**: Major Linux distributions such as Ubuntu, Debian, CentOS, Fedora, and Arch Linux, which include standard commands (`lscpu`, `free`, `lspci`, `/etc/os-release`).
+
 ## Installation
 
 Install Enveil from PyPI:
@@ -163,27 +176,38 @@ The default list is extensive, but if you want to add a tool that isn't included
 ```json
 {
   "software": {
-    "Python": { "command": "python3 --version || python --version" },
-    "Node.js": { "command": "node -v" },
-    "Java": { "command": "java -version" },
-    "Go": { "command": "go version" },
-    "Rust": { "command": "cargo --version" },
-    "pip": { "command": "python3 -m pip --version || python -m pip --version" },
-    "npm": { "command": "npm -v" },
-    "Yarn": { "command": "yarn -v" },
-    "pnpm": { "command": "pnpm -v" },
-    "Git": { "command": "git --version" },
-    "Docker": { "command": "docker --version" },
-    "Terraform": { "command": "terraform version" },
-    "kubectl": { "command": "kubectl version --client" },
-    "AWS CLI": { "command": "aws --version" },
+    # --- Core Development Languages ---
+    "Python": "python --version",
+    "Python3": "python3 --version",
+    "Node.js": "node -v",
+    "Java": "java -version",
+    "Go": "go version",
+    "Rust": "cargo --version",
+
+    # --- Language-Specific Package Managers ---
+    "uv": "uv --version",
+    "pip": "pip --version",
+    "npm": "npm -v",
+    "nvm": "nvm -v",
+    "Yarn": "yarn -v",
+
+    # --- Version Control & Containerization ---
+    "Git": "git --version",
+    "Docker": "docker --version",
+
+    # --- DevOps & Cloud Infrastructure ---
+    "Terraform": "terraform version",
+    "kubectl": "kubectl version --client",
+    "AWS CLI": "aws --version",
+
+    # --- Your Custom Tool ---
     "Hugo": { "command": "hugo version" }
   }
 }
 ```
 
 By default, Enveil provides a comprehensive list of major tools. Feel free to modify your `config.json` to reduce this list if it's too extensive, add tools that are missing, or otherwise tailor it to your exact preferences.
-```
+
 
 Enveil will automatically pick up this configuration and include the specified software in its report.
 
