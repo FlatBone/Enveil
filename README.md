@@ -197,7 +197,7 @@ The default list is extensive, but if you want to add a tool that isn't included
     "kubectl": "kubectl version --client",
     "AWS CLI": "aws --version",
 
-    "Hugo": { "command": "hugo version" }
+    "Hugo": "hugo version"
   }
 }
 ```
